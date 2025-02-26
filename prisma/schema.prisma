@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model auth_log {
+  id         Int           @id @default(autoincrement())
+  user_id    Int
+  type       auth_log_type @default(login)
+  created_at DateTime      @default(now()) @db.Timestamp(0)
+
+  users users @relation(fields: [user_id], references: [id])
+}
+
+model roles {
+  id      Int     @id @default(autoincrement())
+  name    String  @db.VarChar(20)
+  deleted Boolean @default(false)
+  users   users[]
+}
+
+model users {
+  id             Int       @id @default(autoincrement())
+  name           String?   @db.VarChar(244)
+  email          String    @unique @db.VarChar(100)
+  password       String?   @db.Text
+  birth_date     DateTime? @db.Date
+  gender         String?   @db.VarChar(244)
+  remember_token String?   @db.Text
+  role_id        Int       @default(2)
+  status         String    @default("ACTIVE") @db.VarChar(100)
+  deleted        Boolean   @default(false)
+  last_login     DateTime? @default(now()) @db.Timestamp(0)
+  lat_long       String?   @db.VarChar(244)
+  postal_code    String?   @db.VarChar(244)
+  address        String?   @db.VarChar(244)
+  city           String?   @db.VarChar(244)
+  country        String?   @db.VarChar(244)
+  image          String?   @db.VarChar(244)
+  state          String?   @db.VarChar(244)
+  number         String?   @db.VarChar(244)
+  plan           String?   @default("free")
+  plan_id        Int?      @default(1)
+  updated_at     DateTime  @default(now()) @db.Timestamp(0)
+  created_at     DateTime  @default(now()) @db.Timestamp(0)
+
+  roles             roles               @relation(fields: [role_id], references: [id])
+  plans             plans?              @relation(fields: [plan_id], references: [id])
+  payment_details   payments[]
+  user_meta         user_meta[]
+  auth_log          auth_log[]
+  user_answers      user_answers[]
+  bussiness_idea    bussiness_idea[]
+  plan_logs         plan_logs[]
+  user_answers_logs user_answers_logs[]
+}
+
+model user_meta {
+  id      Int     @id @default(autoincrement())
+  user_id Int
+  key     String? @db.VarChar(255)
+  value   String? @db.Text
+  users   users   @relation(fields: [user_id], references: [id])
+}
+
+model steps {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(244)
+  title       String   @db.VarChar(244)
+  description String?  @db.Text
+  deleted     Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  updated_at  DateTime @default(now()) @db.Timestamp(0)
+
+  questions questions[]
+}
+
+model questions {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(244)
+  description String?  @db.Text
+  sort        Int?
+  step_id     Int
+  prompt      String?  @db.Text
+  deleted     Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  updated_at  DateTime @default(now()) @db.Timestamp(0)
+
+  steps        steps          @relation(fields: [step_id], references: [id])
+  user_answers user_answers[]
+}
+
+model user_answers {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  question_id Int
+  answer      String   @db.Text
+  log_id      Int?
+  deleted     Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  updated_at  DateTime @default(now()) @db.Timestamp(0)
+
+  users     users     @relation(fields: [user_id], references: [id])
+  questions questions @relation(fields: [question_id], references: [id])
+
+  user_answers_logs user_answers_logs? @relation(fields: [log_id], references: [id])
+}
+
+model user_answers_logs {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  deleted    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @default(now()) @db.Timestamp(0)
+
+  users users? @relation(fields: [user_id], references: [id])
+
+  user_answers   user_answers[]
+  bussiness_idea bussiness_idea[]
+}
+
+model payments {
+  id          Int      @id @default(autoincrement())
+  amount      Int?     @default(0)
+  description String?  @db.Text
+  response    String?  @db.Text
+  created_by  Int
+  status      String?  @default("pending") @db.VarChar(100)
+  plan_id     Int?
+  plan_type   String?  @default("free") @db.VarChar(100)
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamp(0)
+  deleted     Boolean  @default(false)
+  users       users    @relation(fields: [created_by], references: [id])
+  plans       plans?   @relation(fields: [plan_id], references: [id])
+}
+
+model bussiness_idea {
+  id         Int      @id @default(autoincrement())
+  response   String?  @db.Text
+  log_id     Int?
+  user       Int
+  plan_id    Int?     @default(1)
+  pdf_path   String?
+  deleted    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(0)
+
+  users             users              @relation(fields: [user], references: [id])
+  plans             plans?             @relation(fields: [plan_id], references: [id])
+  user_answers_logs user_answers_logs? @relation(fields: [log_id], references: [id])
+}
+
+model plans {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(20)
+  description String?  @db.Text
+  price       Float    @db.Float
+  prompt      String?  @db.Text
+  deleted     Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamp(0)
+
+  payments       payments[]
+  users          users[]
+  plan_logs      plan_logs[]
+  bussiness_idea bussiness_idea[]
+}
+
+model plan_logs {
+  id         Int      @id @default(autoincrement())
+  plan_id    Int
+  user_id    Int
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  plans plans @relation(fields: [plan_id], references: [id])
+  users users @relation(fields: [user_id], references: [id])
+}
+
+enum auth_log_type {
+  login
+  logout
+}
